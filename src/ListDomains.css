@@ -1,0 +1,31 @@
+.ListDomains {
+  display: grid;
+
+  grid-template-columns: repeat(6, 1fr) auto;
+  background-color: black;
+  padding-bottom: 1px;
+}
+
+.ListDomains-header {
+  font-weight: bold;
+  text-align: center;
+  background-color: slategrey;
+  color: white;
+  padding: 4px;
+  margin: 0.5px;
+}
+
+.ListDomains-row {
+  background-color: white;
+}
+
+.ListDomains-footer {
+  background-color: rgb(148, 152, 156);
+  padding: 0px;
+  margin: 0.5px;
+}
+
+.ListDomains-footer input {
+  width: 100%;
+  border: 0px;
+}
