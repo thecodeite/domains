@@ -3,12 +3,26 @@ import { db } from './firebaseApp'
 import { UserContext } from './UserContext'
 import './ListDomains.css'
 
+const domainsCollection = {
+  collectionName: 'domains',
+  fields: {
+    name: 'Domain Name',
+    purpose: 'purpose',
+    currentRegistrar: 'currentRegistrar',
+    firstRegisterd: 'firstRegisterd',
+    currentExpiry: 'currentExpiry',
+    expiresIn: 'expiresIn',
+    released: 'released',
+  }
+}
+
 type FieldDef = {
   key: string
   name: string
   datatype?: string
   readonly?: boolean
   format?: (str: string, row: any) => any
+  width? : string
 }
 
 const formatRegistrar = (str: string, row: any) => {
@@ -23,30 +37,37 @@ const formatExpires = (str: string, row: any) => {
   const expires = new Date(row.currentExpiry).getTime()
   const today = new Date().getTime()
   const days = Math.floor((expires - today) / (1000 * 60 * 60 * 24))
-  return days > 0 ? <>Expires in {days} days</> : <>Expired {days} days ago</>
+  return days > 0 ? 
+    <span className={(days > 0 && days < 28) ? 'warning' : ''}>Expires in {days} days</span> : 
+    <>Expired {days} days ago</>
+}
+
+const formatReleased = (str: string, row: any) => {
+  return (str === 'yes') ? '✔️' : ''
 }
 
 const fields: FieldDef[] = [
-  { key: 'name', name: 'Domain Name' },
-  { key: 'purpose', name: 'purpose' },
+  { key: 'name', name: domainsCollection.fields['name'] },
+  { key: 'purpose', name: domainsCollection.fields['purpose'], width: '.5fr' },
   {
     key: 'currentRegistrar',
-    name: 'currentRegistrar',
+    name: domainsCollection.fields['currentRegistrar'],
     format: formatRegistrar,
   },
-  { key: 'firstRegisterd', name: 'firstRegisterd', datatype: 'date' },
-  { key: 'currentExpiry', name: 'currentExpiry', datatype: 'date' },
+  { key: 'firstRegisterd', name: domainsCollection.fields['firstRegisterd'], datatype: 'date', width: '.5fr' },
+  { key: 'currentExpiry', name: domainsCollection.fields['currentExpiry'], datatype: 'date', width: '.5fr' },
   {
     key: 'expiresIn',
-    name: 'expiresIn',
+    name: domainsCollection.fields['expiresIn'],
     readonly: true,
     format: formatExpires,
   },
+  { key: 'released', name: domainsCollection.fields['released'], datatype: 'checkbox', format: formatReleased, width: '.2fr' },
 ]
 
 export function ListDomains() {
   return (
-    <div className="ListDomains">
+    <div className="ListDomains" style={{'gridTemplateColumns': `${fields.map(f => f.width || '1fr').join(' ')} auto`}}>
       {fields.map(({ key, name }) => (
         <div key={key} className="ListDomains-header">
           {name}
@@ -66,9 +87,9 @@ function DomainRows() {
 
   useEffect(() => {
     if (!user) return
-    db.collection('domains')
+    db.collection(domainsCollection.collectionName)
       .where('owner', '==', user.uid)
-      .orderBy('firstRegisterd', 'asc')
+      .orderBy(domainsCollection.fields.firstRegisterd, 'asc')
       .onSnapshot((querySnapshot) => {
         const newRows: any[] = []
         querySnapshot.forEach(function (doc) {
@@ -114,7 +135,7 @@ function DomainRow({ row }: { row: any }) {
       }
       console.log('doc:', doc)
       const docRef = await db
-        .collection('domains')
+        .collection(domainsCollection.collectionName)
         .doc(rowChanges.docId)
         .update(rowChanges)
       console.log('Document updated: ', docRef)
@@ -124,18 +145,34 @@ function DomainRow({ row }: { row: any }) {
     }
   }
 
+  const getEditComponent = (key:string, datatype: string | undefined) => {
+    const value = rowChanges[key] || ''
+    if(datatype === 'checkbox') {
+      return <input
+      type='checkbox'
+      checked={value === 'yes'}
+      value="yes"
+      onChange={(e) =>
+        setRowChanges({ ...rowChanges, [key]: e.target.value })
+      }
+    />
+    } else {
+      return <input
+      type={datatype}
+      value={value}
+      onChange={(e) =>
+        setRowChanges({ ...rowChanges, [key]: e.target.value })
+      }
+    />
+    }
+  }
+
   return (
     <>
       {fields.map(({ key, datatype, format }) => (
         <div key={key} className="ListDomains-row">
           {editing ? (
-            <input
-              type={datatype}
-              value={rowChanges[key] || ''}
-              onChange={(e) =>
-                setRowChanges({ ...rowChanges, [key]: e.target.value })
-              }
-            />
+            getEditComponent(key, datatype)
           ) : format ? (
             format(row[key], row)
           ) : (
@@ -173,7 +210,7 @@ function AddNewDomainRow() {
         ...newDomain,
       }
       console.log('doc:', doc)
-      const docRef = await db.collection('domains').add(doc)
+      const docRef = await db.collection(domainsCollection.collectionName).add(doc)
       console.log('Document written with ID: ', docRef.id)
     } catch (error) {
       console.error('Error adding document: ', error)

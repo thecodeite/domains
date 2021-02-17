@@ -1,7 +1,6 @@
 .ListDomains {
   display: grid;
 
-  grid-template-columns: repeat(6, 1fr) auto;
   background-color: black;
   padding-bottom: 1px;
 }
@@ -17,6 +16,11 @@
 
 .ListDomains-row {
   background-color: white;
+}
+
+.ListDomains-row .warning {
+  background-color: rgb(97, 23, 23);
+  color: white;
 }
 
 .ListDomains-footer {
