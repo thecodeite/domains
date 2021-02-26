@@ -119,6 +119,16 @@ function DomainRow({ row }: { row: any }) {
     setRowChanges(row)
   }, [editing, row])
 
+  const doRenew = async (docId: string, currentExpiryString: string) => {
+    const expiry = new Date(currentExpiryString) 
+    expiry.setFullYear(expiry.getFullYear() + 1)
+    const newExpiry = expiry.toISOString().substr(0, 10)
+
+    db
+      .collection(domainsCollection.collectionName)
+      .doc(docId)
+      .update({[domainsCollection.fields.currentExpiry]: newExpiry})
+  }
   const doDelete = (docId: string) => {
     db.collection('domains').doc(docId).delete()
   }
@@ -184,11 +194,12 @@ function DomainRow({ row }: { row: any }) {
         {editing ? (
           <>
             <button onClick={() => doSave()}>S</button>
-            <button onClick={() => doEdit(false)}>C</button>|
+            <button onClick={() => doEdit(false)}>C</button>
           </>
         ) : (
           <>
-            <button onClick={() => doEdit(true)}>E</button>|
+            <button onClick={() => doRenew(row.docId, row[domainsCollection.fields.currentExpiry])}>♽</button>
+            <button onClick={() => doEdit(true)}>E</button>
             <button onClick={() => doDelete(row.docId)}>D</button>
           </>
         )}
